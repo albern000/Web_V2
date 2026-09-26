@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Selamat Datang — AOT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:   #14160f;
+    --bg-panel-2:#23271b;
+    --line:      #3a3f2c;
+    --olive:     #7c8f52;
+    --olive-dim: #5b6a3c;
+    --brass:     #c9a15a;
+    --brass-lt:  #e3c384;
+    --bone:      #e9e6d8;
+    --muted:     #9aa085;
+    box-sizing:border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *,*::before,*::after{ box-sizing:inherit; }
+  html,body{ height:100%; margin:0; }
+  body{
+    background: var(--bg-deep); color: var(--bone);
+    font-family:'Barlow','Segoe UI',sans-serif;
+    overflow:hidden; position:relative;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .cine{ position:fixed; inset:0; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+
+  .terrain{
+    position:absolute; inset:0; z-index:-2;
+    background-color: var(--bg-deep);
+    background-image:
+      linear-gradient(rgba(124,143,82,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,143,82,0.05) 1px, transparent 1px),
+      radial-gradient(ellipse 560px 400px at 50% 45%, rgba(201,161,90,0.10), transparent 60%);
+    background-size: 42px 42px, 42px 42px, auto;
+  }
+  .sweep{
+    position:absolute; z-index:-1; top:50%; left:50%; width:900px; height:900px;
+    transform: translate(-50%,-50%); border-radius:50%;
+    background: conic-gradient(from 0deg, rgba(201,161,90,0.10), transparent 20%);
+    animation: spin 9s linear infinite;
+  }
+  @keyframes spin{ to{ transform: translate(-50%,-50%) rotate(360deg); } }
+  .vignette{
+    position:absolute; inset:0; pointer-events:none; z-index:5;
+    background: radial-gradient(ellipse 90% 80% at 50% 50%, transparent 55%, rgba(0,0,0,0.55) 100%);
+  }
+  .scanlines{
+    position:absolute; inset:0; pointer-events:none; opacity:0.25; z-index:5;
+    background: repeating-linear-gradient(180deg, rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 1px, transparent 2px, transparent 3px);
+    mix-blend-mode:multiply;
+  }
+
+  .banner{
+    position:absolute; top:12%; width:34vw; max-width:230px; height:54px;
+    background: linear-gradient(180deg, var(--bg-panel-2), var(--bg-deep));
+    border:1px solid var(--line); border-top:2px solid var(--brass);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:0.14em;
+    color:var(--brass); text-transform:uppercase;
+    opacity:0;
+  }
+  .banner.l{ left:0; transform: translateX(-100%); animation: slideL 0.55s cubic-bezier(.2,.8,.3,1) forwards; animation-delay:0.85s; }
+  .banner.r{ right:0; transform: translateX(100%); animation: slideR 0.55s cubic-bezier(.2,.8,.3,1) forwards; animation-delay:0.85s; }
+  @keyframes slideL{ to{ opacity:1; transform: translateX(0); } }
+  @keyframes slideR{ to{ opacity:1; transform: translateX(0); } }
+
+  .emblem-wrap{ position:relative; width:160px; height:160px; z-index:2; }
+  .ring{
+    position:absolute; inset:0; border-radius:50%; border:1px solid var(--brass);
+    opacity:0; transform:scale(0.4);
+  }
+  .ring.r1{ animation: ringPulse 0.9s ease-out forwards; animation-delay:0.7s; }
+  .ring.r2{ animation: ringPulse 0.9s ease-out forwards; animation-delay:0.82s; }
+  @keyframes ringPulse{
+    0%{ opacity:0.9; transform:scale(0.4); }
+    100%{ opacity:0; transform:scale(1.9); }
+  }
+
+  .emblem{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    transform: scale(0); opacity:0;
+    animation: stampIn 0.6s cubic-bezier(.25,1.4,.4,1) forwards; animation-delay:0.15s;
+  }
+  @keyframes stampIn{ to{ transform:scale(1); opacity:1; } }
+  .emblem .seal{
+    width:130px; height:130px;
+    clip-path: polygon(50% 0%, 90% 12%, 100% 40%, 88% 78%, 50% 100%, 12% 78%, 0% 40%, 10% 12%);
+    background: linear-gradient(155deg, var(--bg-panel-2), var(--bg-deep));
+    border:1px solid var(--brass);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .emblem svg{ width:56px; height:56px; }
+
+  .glow-pulse{
+    position:absolute; inset:-30px; border-radius:50%; z-index:-1;
+    background: radial-gradient(circle, rgba(201,161,90,0.35), transparent 65%);
+    opacity:0; animation: glowIn 1s ease-out forwards; animation-delay:0.5s;
+  }
+  @keyframes glowIn{ 0%{ opacity:0;} 40%{ opacity:0.9;} 100%{ opacity:0.35;} }
+
+  .confetti{ position:absolute; top:-6%; width:7px; height:14px; opacity:0; animation: fall 2.6s ease-in forwards; }
+  @keyframes fall{
+    0%{ opacity:0; transform: translateY(0) rotate(0deg); }
+    8%{ opacity:1; }
+    100%{ opacity:0; transform: translateY(115vh) rotate(540deg); }
+  }
+  .c1 { left:18%; background:var(--brass);     animation-delay:0.85s; }
+  .c2 { left:28%; background:var(--olive);     animation-delay:0.95s; }
+  .c3 { left:38%; background:var(--brass-lt);  animation-delay:0.80s; }
+  .c4 { left:47%; background:var(--olive-dim); animation-delay:1.05s; }
+  .c5 { left:56%; background:var(--brass);     animation-delay:0.90s; }
+  .c6 { left:65%; background:var(--olive);     animation-delay:1.00s; }
+  .c7 { left:74%; background:var(--brass-lt);  animation-delay:0.88s; }
+  .c8 { left:83%; background:var(--brass);     animation-delay:1.10s; }
+  .c9 { left:23%; background:var(--olive-dim); animation-delay:1.20s; }
+  .c10{ left:60%; background:var(--brass-lt);  animation-delay:1.25s; }
+  .c11{ left:42%; background:var(--brass);     animation-delay:1.35s; }
+  .c12{ left:70%; background:var(--olive);     animation-delay:1.15s; }
+
+  .title-card{
+    position:absolute; left:0; right:0; bottom:14%; text-align:center; padding:0 24px; z-index:4;
+  }
+  .eyebrow, h1, p.sub, .bar-wrap{ opacity:0; transform: translateY(10px) scale(0.98); }
+  .eyebrow{
+    font-size:11px; letter-spacing:0.22em; color:var(--brass); text-transform:uppercase; font-weight:600;
+    animation: cardIn 0.5s cubic-bezier(.2,1.2,.4,1) forwards; animation-delay:1.05s;
+  }
+  h1{
+    font-family:'Big Shoulders Display', sans-serif; font-weight:800;
+    font-size: clamp(1.8rem, 8vw, 2.4rem); text-transform:uppercase; margin:8px 0 6px; letter-spacing:0.03em;
+    animation: cardIn 0.55s cubic-bezier(.2,1.3,.35,1) forwards; animation-delay:1.2s;
+  }
+  p.sub{
+    color:var(--muted); font-size:14.5px; margin:0 auto 22px; max-width:340px;
+    animation: cardIn 0.5s cubic-bezier(.2,1.2,.4,1) forwards; animation-delay:1.4s;
+  }
+  @keyframes cardIn{ to{ opacity:1; transform:translateY(0) scale(1); } }
+
+  .bar-wrap{ max-width:280px; margin:0 auto; animation: cardIn 0.4s ease forwards; animation-delay:1.55s; }
+  .bar{ height:3px; background:var(--bg-panel-2); border:1px solid var(--line); overflow:hidden; }
+  .bar .fill{ height:100%; width:0%; background: var(--brass); animation: load 1.4s linear forwards; animation-delay:1.65s; }
+  @keyframes load{ to{ width:100%; } }
+  .readout{
+    margin-top:10px; font-size:10.5px; letter-spacing:0.1em; color:var(--muted); text-transform:uppercase;
+    font-family:'JetBrains Mono', monospace;
+  }
+
+  .bar-top, .bar-bottom{
+    position:absolute; left:0; right:0; height:0; background:#000; z-index:6;
+    animation: closeBars 0.8s ease-out forwards; animation-delay:3.15s;
+  }
+  .bar-top{ top:0; } .bar-bottom{ bottom:0; }
+  @keyframes closeBars{ to{ height:11%; } }
+
+  .blackout{
+    position:absolute; inset:0; background:#000; opacity:0; pointer-events:none; z-index:9;
+    animation: fadeBlack 0.7s ease-in forwards; animation-delay:3.35s;
+  }
+  @keyframes fadeBlack{ to{ opacity:1; } }
+
+  .sound-hint{
+    position:absolute; bottom:6%; left:50%; transform:translateX(-50%);
+    font-size:10.5px; letter-spacing:0.08em; color:var(--muted); text-transform:uppercase;
+    opacity:0; pointer-events:none; transition:opacity .3s ease; z-index:6;
+  }
+  .sound-hint.show{ opacity:0.85; }
+
+  @media (prefers-reduced-motion: reduce){
+    .sweep,.ring,.emblem,.glow-pulse,.confetti,.banner{ animation:none !important; }
+    .emblem{ transform:scale(1); opacity:1; }
+    .banner{ opacity:1; transform:none; }
+    .eyebrow,h1,p.sub,.bar-wrap{ opacity:1; transform:none; animation:none; }
+    .bar .fill{ width:100%; animation:none; }
+    .bar-top,.bar-bottom{ height:11%; animation:none; }
+  }
+</style>
+</head>
+<body>
+<div class="cine">
+  <div class="terrain"></div>
+  <div class="sweep"></div>
+
+  <div class="banner l">UNIT AOT</div>
+  <div class="banner r">SEC-01</div>
+
+  <div class="emblem-wrap">
+    <div class="glow-pulse"></div>
+    <div class="ring r1"></div>
+    <div class="ring r2"></div>
+    <div class="emblem">
+      <div class="seal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--brass)" stroke-width="1.5">
+          <path d="M12 2l7 3v6c0 5-3 8.5-7 11-4-2.5-7-6-7-11V5l7-3z"/>
+          <path d="M8.5 12.2l2.3 2.3 4.7-4.9" stroke-width="1.8"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="confetti c1"></div><div class="confetti c2"></div><div class="confetti c3"></div>
+  <div class="confetti c4"></div><div class="confetti c5"></div><div class="confetti c6"></div>
+  <div class="confetti c7"></div><div class="confetti c8"></div><div class="confetti c9"></div>
+  <div class="confetti c10"></div><div class="confetti c11"></div><div class="confetti c12"></div>
+
+  <div class="title-card">
+    <div class="eyebrow">Akses Diberikan</div>
+    <h1>welcome to Divisi AS</h1>
+    <p class="sub">Identitas terverifikasi. Menyiapkan area komando untukmu.</p>
+    <div class="bar-wrap">
+      <div class="bar"><div class="fill"></div></div>
+      <div class="readout">Memuat Unif <span id="pct">0%</span></div>
+    </div>
+  </div>
+
+  <div class="sound-hint" id="soundHint">Ketuk layar untuk suara</div>
+
+  <div class="bar-top"></div>
+  <div class="bar-bottom"></div>
+  <div class="vignette"></div>
+  <div class="scanlines"></div>
+  <div class="blackout"></div>
+</div>
+
+<script>
+  var pct = document.getElementById('pct');
+  var soundHint = document.getElementById('soundHint');
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // GANTI URL INI dengan halaman tujuan sebenarnya
+  var TUJUAN = 'https://docs.google.com/document/d/10ui4NDpLdV_kJV3KYtHPKvfVjPwQVNXx2VSRSd_3xHM/edit?usp=drivesdk';
+  var totalDelay = reduced ? 800 : 4050;
+
+  // ---- synthesized welcome chime (tidak perlu file audio) ----
+  var AudioCtx = window.AudioContext || window.webkitAudioContext;
+  var actx = AudioCtx ? new AudioCtx() : null;
+
+  function tone(freq, startAt, dur, type, peak){
+    if(!actx) return;
+    var osc = actx.createOscillator();
+    var gain = actx.createGain();
+    osc.type = type || 'triangle';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0, actx.currentTime + startAt);
+    gain.gain.linearRampToValueAtTime(peak || 0.18, actx.currentTime + startAt + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + startAt + dur);
+    osc.connect(gain); gain.connect(actx.destination);
+    osc.start(actx.currentTime + startAt);
+    osc.stop(actx.currentTime + startAt + dur + 0.05);
+  }
+
+  function playWelcomeChime(){
+    if(!actx) return;
+    tone(523.25, 0.00, 0.28, 'triangle', 0.16); // C5
+    tone(659.25, 0.10, 0.30, 'triangle', 0.16); // E5
+    tone(783.99, 0.20, 0.45, 'triangle', 0.18); // G5
+    tone(1046.5, 0.32, 0.65, 'sine',     0.14); // C6 sparkle
+    tone(392.00, 0.32, 0.70, 'sine',     0.06); // soft low pad
+  }
+
+  var chimePlayed = false;
+  function tryPlayChime(){
+    if(chimePlayed || !actx) return;
+    if(actx.state === 'suspended'){
+      actx.resume().catch(function(){});
+    }
+    if(actx.state === 'running'){
+      chimePlayed = true;
+      playWelcomeChime();
+      soundHint.classList.remove('show');
+    }
+  }
+
+  setTimeout(function(){
+    tryPlayChime();
+    setTimeout(function(){
+      if(!chimePlayed) soundHint.classList.add('show');
+    }, 200);
+  }, reduced ? 0 : 700);
+
+  ['pointerdown','touchstart','click','keydown'].forEach(function(evt){
+    document.addEventListener(evt, tryPlayChime, { once:false, passive:true });
+  });
+
+  var barDelay = reduced ? 0 : 1650, barDuration = reduced ? 400 : 1400;
+  var start = null;
+  function tick(ts){
+    if(!start) start = ts;
+    var elapsed = ts - start;
+    var p = Math.min(100, Math.max(0, Math.round(((elapsed - barDelay) / barDuration) * 100)));
+    pct.textContent = p + '%';
+    if(elapsed < barDelay + barDuration){ requestAnimationFrame(tick); }
+  }
+  requestAnimationFrame(tick);
+
+  window.addEventListener('load', function(){
+    setTimeout(function(){ window.location.href = TUJUAN; }, totalDelay);
+  });
+</script>
+</body>
+</html>

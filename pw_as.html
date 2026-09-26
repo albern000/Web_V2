@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Verifikasi Akses — AOT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    box-sizing: border-box;
+    --bg-deep:   #14160f;
+    --bg-panel:  #1c1f16;
+    --bg-panel-2:#23271b;
+    --line:      #3a3f2c;
+    --olive:     #7c8f52;
+    --olive-dim: #5b6a3c;
+    --brass:     #c9a15a;
+    --bone:      #e9e6d8;
+    --muted:     #9aa085;
+    --alert:     #a63d33;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *,*::before,*::after{ box-sizing:inherit; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    background: var(--bg-deep);
+    color: var(--bone);
+    font-family:'Barlow', 'Segoe UI', sans-serif;
+    font-size:16px; line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    display:flex; flex-direction:column;
+  }
+  ::selection{ background: var(--olive); color:#111; }
+  h1,h2{ font-family:'Big Shoulders Display', sans-serif; font-weight:700; margin:0; }
+  a{ color:inherit; }
+
+  .terrain{
+    position: fixed; inset:0; z-index:-2; pointer-events:none;
+    background-color: var(--bg-deep);
+    background-image:
+      linear-gradient(rgba(124,143,82,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(124,143,82,0.05) 1px, transparent 1px),
+      radial-gradient(ellipse 520px 360px at 50% -5%, rgba(124,143,82,0.15), transparent 60%),
+      radial-gradient(ellipse 480px 340px at 100% 100%, rgba(91,106,60,0.18), transparent 55%);
+    background-size: 42px 42px, 42px 42px, auto, auto;
+  }
+
+  /* radar sweep, decorative */
+  .sweep{
+    position: fixed; z-index:-1; pointer-events:none;
+    top:50%; left:50%; width:900px; height:900px;
+    transform: translate(-50%,-50%);
+    border-radius:50%;
+    background: conic-gradient(from 0deg, rgba(124,143,82,0.14), transparent 22%);
+    animation: spin 7s linear infinite;
+    opacity:0.5;
+  }
+  @keyframes spin{ to{ transform: translate(-50%,-50%) rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce){ .sweep{ animation:none; } }
+
+  .statusbar{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:6px 20px; background:#0e0f0a; border-bottom:1px solid var(--line);
+    font-size:11px; letter-spacing:0.12em; color:var(--muted);
+    text-transform:uppercase; overflow:hidden; white-space:nowrap;
+  }
+  .statusbar span.dot{
+    display:inline-block; width:6px; height:6px; border-radius:50%;
+    background: var(--alert); margin-right:6px; box-shadow:0 0 6px var(--alert);
+    animation: blink 1.6s ease-in-out infinite;
+  }
+  .statusbar.unlocked span.dot{ background: var(--olive); box-shadow:0 0 6px var(--olive); animation:none; }
+  @keyframes blink{ 0%,100%{ opacity:1;} 50%{ opacity:0.25;} }
+  .statusbar .r{ color:var(--brass); }
+
+  main{
+    flex:1; display:flex; align-items:center; justify-content:center;
+    padding: 40px 20px;
+  }
+
+  .gate{
+    width:100%; max-width: 420px;
+    background: linear-gradient(165deg, rgba(35,39,27,0.92), rgba(20,22,15,0.94));
+    border:1px solid var(--line);
+    padding: 34px 30px 28px;
+    position:relative;
+  }
+  .gate::before{ content:""; position:absolute; top:-1px; left:-1px; width:18px; height:18px; border-top:2px solid var(--brass); border-left:2px solid var(--brass); }
+  .gate::after{ content:""; position:absolute; bottom:-1px; right:-1px; width:18px; height:18px; border-bottom:2px solid var(--brass); border-right:2px solid var(--brass); }
+
+  .gate .seal{
+    width:56px; height:56px; margin: 0 auto 18px;
+    border:1px solid var(--olive-dim);
+    clip-path: polygon(15% 0, 100% 0, 100% 85%, 85% 100%, 0 100%, 0 15%);
+    display:flex; align-items:center; justify-content:center;
+    background: var(--bg-panel-2);
+  }
+  .gate .seal svg{ width:28px; height:28px; }
+
+  .gate .eyebrow{
+    text-align:center; font-size:11px; letter-spacing:0.18em; color:var(--brass);
+    text-transform:uppercase; font-weight:600; margin-bottom:8px;
+  }
+  .gate h1{
+    text-align:center; font-size: 1.9rem; text-transform:uppercase; margin-bottom:10px;
+  }
+  .gate p.sub{
+    text-align:center; color:var(--muted); font-size:14.5px; margin:0 0 26px;
+  }
+
+  .field{ margin-bottom: 18px; }
+  .field label{
+    display:block; font-size:11px; letter-spacing:0.14em; text-transform:uppercase;
+    color: var(--muted); margin-bottom:8px;
+  }
+  .input-wrap{
+    display:flex; align-items:center; gap:8px;
+    border:1px solid var(--line); background: var(--bg-panel-2);
+    padding: 0 6px 0 14px;
+    transition: border-color .15s ease;
+  }
+  .input-wrap:focus-within{ border-color: var(--olive); }
+  .input-wrap svg{ width:15px; height:15px; color:var(--muted); flex-shrink:0; }
+  .input-wrap input{
+    flex:1; min-width:0;
+    background:none; border:none; outline:none;
+    color: var(--bone);
+    font-family:'JetBrains Mono', monospace;
+    letter-spacing: 0.12em;
+    font-size: 15px;
+    padding: 13px 0;
+  }
+  .input-wrap input::placeholder{ color: #565b47; letter-spacing:0.04em; font-family:'Barlow'; }
+  .toggle-eye{
+    background:none; border:none; cursor:pointer; color:var(--muted);
+    display:flex; align-items:center; padding:8px;
+  }
+  .toggle-eye:hover{ color: var(--bone); }
+  .toggle-eye svg{ width:17px; height:17px; }
+
+  .err{
+    font-size:12.5px; color: var(--alert); margin-top:8px; min-height:16px;
+    display:flex; align-items:center; gap:6px;
+    opacity:0; transition: opacity .15s ease;
+  }
+  .err.show{ opacity:1; }
+  .err svg{ width:13px; height:13px; flex-shrink:0; }
+
+  .btn{
+    width:100%; display:flex; align-items:center; justify-content:center; gap:10px;
+    padding: 14px 22px; margin-top: 6px;
+    font-weight:600; font-size:14px; letter-spacing:0.06em; text-transform:uppercase;
+    border:1px solid var(--olive); background: var(--olive); color:#0e0f0a;
+    clip-path: polygon(0 0, 100% 0, 100% 70%, 94% 100%, 0 100%);
+    cursor:pointer; font-family:'Barlow'; transition: background .15s ease;
+  }
+  .btn:hover{ background:#8ea45e; }
+  .btn:active{ transform: translateY(1px); }
+
+  .back-link{
+    display:block; text-align:center; margin-top:20px;
+    font-size:13px; color:var(--muted); text-decoration:none;
+  }
+  .back-link:hover{ color: var(--bone); }
+
+  .readout{
+    margin-top:22px; border-top:1px dashed var(--line); padding-top:14px;
+    display:flex; justify-content:space-between; font-size:11.5px;
+    letter-spacing:0.08em; color:var(--muted); text-transform:uppercase;
+  }
+  .readout .v{ color:var(--brass); font-weight:600; }
+
+  @media (max-width:420px){
+    .gate{ padding:28px 20px 22px; }
+  }
+</style>
+</head>
+<body>
+<div class="terrain" aria-hidden="true"></div>
+<div class="sweep" aria-hidden="true"></div>
+
+<div class="statusbar" id="statusbar">
+  <span><span class="dot"></span>STATUS: TERKUNCI</span>
+  <span class="r">AOT SECURE GATE</span>
+</div>
+
+<main>
+  <form class="gate" id="gateForm" novalidate>
+    <div class="seal">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--olive)" stroke-width="1.6">
+        <rect x="5" y="10" width="14" height="10" rx="1"/>
+        <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+      </svg>
+    </div>
+    <div class="eyebrow">Akses Terbatas</div>
+    <h1>Verifikasi Akses</h1>
+    <p class="sub">Masukkan sandi yang diberikan admin untuk melanjutkan ke area komando.</p>
+
+    <div class="field">
+      <label for="pw">Kata sandi</label>
+      <div class="input-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="10" width="14" height="10" rx="1"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+        <input type="password" id="pw" name="pw" placeholder="••••••••" autocomplete="off" inputmode="text">
+        <button type="button" class="toggle-eye" id="toggleEye" aria-label="Tampilkan sandi">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" id="eyeIcon"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      <div class="err" id="errMsg">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        <span>Sandi salah. Hubungi admin squad.</span>
+      </div>
+    </div>
+
+    <button type="submit" class="btn">
+      <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12l5 5L20 6"/></svg>
+      Konfirmasi
+    </button>
+
+    <a id="nextLink" href="wc_as.html" style="display:none;">Lanjut ke area komando</a>
+    <a class="back-link" href="unif_divisi.html">← Kembali</a>
+
+    <div class="readout">
+      <span>Protokol</span>
+      <span class="v">AOT-SEC-01</span>
+    </div>
+  </form>
+</main>
+
+<script>
+  var pwInput = document.getElementById('pw');
+  var toggleEye = document.getElementById('toggleEye');
+  var form = document.getElementById('gateForm');
+  var errMsg = document.getElementById('errMsg');
+  var statusbar = document.getElementById('statusbar');
+
+  toggleEye.addEventListener('click', function(){
+    var showing = pwInput.type === 'text';
+    pwInput.type = showing ? 'password' : 'text';
+    toggleEye.setAttribute('aria-label', showing ? 'Tampilkan sandi' : 'Sembunyikan sandi');
+  });
+
+  // NOTE: ganti nilai di bawah ini dengan pemeriksaan sandi asli dari admin/back-end.
+  var SANDI_VALID = 'A123S';
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    if(pwInput.value.trim().toUpperCase() === SANDI_VALID){
+      errMsg.classList.remove('show');
+      statusbar.classList.add('unlocked');
+      statusbar.innerHTML = '<span><span class="dot"></span>STATUS: AKSES DIBERIKAN</span><span class="r">AOT SECURE GATE</span>';
+      window.location.href = document.getElementById('nextLink').getAttribute('href');
+    } else {
+      errMsg.classList.add('show');
+      pwInput.focus();
+    }
+  });
+</script>
+</body>
+</html>
